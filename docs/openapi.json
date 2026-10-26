@@ -1,0 +1,897 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Portfolio API — implemented routes",
+    "version": "1.0.0",
+    "description": "Current runtime routes and request schemas. Full response examples and status semantics in API.md. AI provider deferred."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001"
+    }
+  ],
+  "paths": {
+    "/health/live": {
+      "get": {
+        "summary": "Liveness",
+        "parameters": [],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Database readiness",
+        "parameters": [],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts": {
+      "get": {
+        "summary": "Published articles",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tags": {
+      "get": {
+        "summary": "Published article tags",
+        "parameters": [],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/session": {
+      "get": {
+        "summary": "Owner access and storage availability",
+        "parameters": [],
+        "security": [
+          {
+            "OwnerBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/posts": {
+      "get": {
+        "summary": "Owner article listing",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "schema": {
+              "type": "string",
+              "maxLength": 60
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "published",
+                "archived"
+              ]
+            }
+          }
+        ],
+        "security": [
+          {
+            "OwnerBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create article",
+        "parameters": [],
+        "security": [
+          {
+            "OwnerBearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostWrite"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/posts/{id}/revisions": {
+      "get": {
+        "summary": "Owner article revisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            }
+          }
+        ],
+        "security": [
+          {
+            "OwnerBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/posts/{slug}": {
+      "get": {
+        "summary": "Published article",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/posts/{id}": {
+      "get": {
+        "summary": "Read editable article",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "OwnerBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Replace article",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"1\""
+            }
+          }
+        ],
+        "security": [
+          {
+            "OwnerBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostWrite"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/media/uploads": {
+      "post": {
+        "summary": "Create signed R2 upload",
+        "parameters": [],
+        "security": [
+          {
+            "OwnerBearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadWrite"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/media/{id}/complete": {
+      "post": {
+        "summary": "Verify and publish image",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "OwnerBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/config": {
+      "get": {
+        "summary": "Disabled AI Agent configuration",
+        "parameters": [],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/sessions": {
+      "post": {
+        "summary": "Create capability session",
+        "parameters": [],
+        "security": [],
+        "responses": {
+          "201": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/sessions/{id}": {
+      "get": {
+        "summary": "Read session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ChatSessionToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Revoke session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ChatSessionToken": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "See API.md for the complete response field contract."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/chat/sessions/{id}/messages": {
+      "post": {
+        "summary": "AI provider not configured; returns 503",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ChatSessionToken": []
+          }
+        ],
+        "responses": {
+          "503": {
+            "description": "ai_not_configured. No model invocation or SSE stream yet."
+          },
+          "default": {
+            "description": "Problem Details; see API.md for status-specific behavior.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageWrite"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PostWrite": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "excerpt": {
+            "type": "string",
+            "maxLength": 320
+          },
+          "bodyMarkdown": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200000
+          },
+          "tags": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "slug": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60,
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                }
+              },
+              "required": [
+                "slug",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "mediaIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "coverImageId": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isDemo": {
+            "default": false,
+            "type": "boolean"
+          },
+          "status": {
+            "default": "draft",
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ]
+          }
+        },
+        "required": [
+          "slug",
+          "title",
+          "excerpt",
+          "bodyMarkdown",
+          "tags",
+          "mediaIds",
+          "coverImageId",
+          "isDemo",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "UploadWrite": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ]
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5242880
+          },
+          "alt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 250
+          }
+        },
+        "required": [
+          "contentType",
+          "sizeBytes",
+          "alt"
+        ],
+        "additionalProperties": false
+      },
+      "MessageWrite": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "clientMessageId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "pagePath": {
+            "type": "string",
+            "maxLength": 240,
+            "pattern": "^\\/(?![/\\\\])[^\\\\\\s?#]*$"
+          }
+        },
+        "required": [
+          "clientMessageId",
+          "content",
+          "pagePath"
+        ],
+        "additionalProperties": false
+      },
+      "Problem": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "OwnerBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "ChatSessionToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Opaque 256-bit capability; not an owner JWT"
+      }
+    }
+  }
+}

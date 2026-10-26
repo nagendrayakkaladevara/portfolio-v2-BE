@@ -1,0 +1,18 @@
+# AI Agent integration boundary
+
+The product is named **AI Agent**, with launcher/title **Ask about Sai**. The current frontend demo is explicit. Backend generation is disabled until the user provides the AI endpoint. The domain interfaces in `src/modules/chat/provider.ts` avoid coupling the application to a specific vendor or guessing that the future endpoint is OpenAI-compatible.
+
+When the endpoint is supplied, clarify its authentication mechanism, request/response shape, streaming protocol, limits, model selection, retention and cost controls. Configure credentials only in server secrets; allow only the configured HTTPS host, do not accept a provider URL from a visitor. Add a dedicated adapter with bounded connection/response timeouts, output validation and cancellation. No generic unauthenticated proxy endpoint.
+
+Before enabling generation, implement:
+
+1. Durable turns table: session ID, unique clientMessageId, canonical request hash, status, lease/attempt count, answer, verified citation IDs and knowledge version. Same ID/body replays completed output; conflicting content returns 409. Atomic per-session active-turn claim, 20 user turns/session; never hold a DB transaction while waiting for a model.
+2. Approved public knowledge query: curated profile facts and published non-demo article revisions only. Never consume drafts, secrets, raw uploads, arbitrary URLs, or stale deleted material. Keep document text separate from instructions. Use fixed retrieval limits and source IDs assigned by the server. Build retrievable profile content explicitly; no personal-context or conversation-memory ingestion.
+3. Revalidate source publication before response finalization and history reuse. Map returned citation IDs to server-approved local URLs; never trust model-generated links. Answer unknown questions honestly. Do not impersonate Sai or claim personal availability.
+4. Bounded turn budget: 12k input tokens, 800 output tokens (and max 8000 text characters), 45-second provider timeout, 60-second overall request timeout, per-session/IP and daily global cost caps. Define actual token accounting with the selected provider. Reject excess before invoking it.
+5. Abort on disconnected response, explicit stop and session deletion. Cancel in-flight work across replicas using a shared cancellation state/poll or pubsub. Expired leases recover after crashes. Generation must not continue indefinitely after a client disconnects.
+6. HTTP errors as Problem Details before SSE headers. Stream typed `start`, `delta`, `sources`, `done`, `error` events matching the existing frontend `chatEventSchema`. `start` echoes the request clientMessageId and assigns a messageId; `done` includes authoritative text, verified sources, finishReason and knowledgeVersion. Only a successful done event completes a turn. Add heartbeat and backpressure handling; do not buffer unlimited output.
+7. Persist only safe conversation data, not system prompts or retrieved full documents. Add transcript retention/deletion and provider-data policy before production. Do not log question bodies, tokens, answers or raw provider errors by default.
+8. Add authorization/isolation, concurrency, idempotency/replay, timeout, cancellation, revoked-session, malformed-stream, prompt-injection, citation, quota and interrupted-generation tests. Run live provider staging checks. Only then change `/chat/config.enabled` to true.
+
+Current runtime has no network calls to AI providers, no live stream, no turns table and no billable model activity. Session infrastructure and HTTP validation are ready; the list above is intentionally a gate, not a claim of completed features.
