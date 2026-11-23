@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "build-tools"
+  },
+  "include": ["scripts/**/*.ts", "src/**/*.ts"]
+}
