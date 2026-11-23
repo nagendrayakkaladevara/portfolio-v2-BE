@@ -48,38 +48,25 @@ export async function normalizeImage(bytes: Buffer, expectedType: string) {
     .webp({ quality: 85 })
     .toBuffer({ resolveWithObject: true });
 }
+/** Cloudflare R2 (S3-compatible). Unconfigured until phase 2 env vars are set. */
 export class MediaService {
   private client: S3Client | null;
   constructor(
     private db: Database,
     private env: Env,
   ) {
-    if (env.AWS_ENDPOINT_URL_S3) {
-      this.client = new S3Client({
-        region: env.AWS_REGION ?? "us-east-2",
-        endpoint: env.AWS_ENDPOINT_URL_S3,
-        credentials: {
-          accessKeyId: env.AWS_ACCESS_KEY_ID!,
-          secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
-        },
-        forcePathStyle: true,
-        maxAttempts: 2,
-        requestHandler: { requestTimeout: 15000, connectionTimeout: 5000 },
-      });
-    } else if (env.R2_ACCOUNT_ID) {
-      this.client = new S3Client({
-        region: "auto",
-        endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-        credentials: {
-          accessKeyId: env.R2_ACCESS_KEY_ID!,
-          secretAccessKey: env.R2_SECRET_ACCESS_KEY!,
-        },
-        maxAttempts: 2,
-        requestHandler: { requestTimeout: 15000, connectionTimeout: 5000 },
-      });
-    } else {
-      this.client = null;
-    }
+    this.client = env.R2_ACCOUNT_ID
+      ? new S3Client({
+          region: "auto",
+          endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+          credentials: {
+            accessKeyId: env.R2_ACCESS_KEY_ID!,
+            secretAccessKey: env.R2_SECRET_ACCESS_KEY!,
+          },
+          maxAttempts: 2,
+          requestHandler: { requestTimeout: 15000, connectionTimeout: 5000 },
+        })
+      : null;
   }
   private storage() {
     if (!this.client)
@@ -90,16 +77,6 @@ export class MediaService {
       );
     return this.client;
   }
-  private privateBucket() {
-    return this.env.AWS_ENDPOINT_URL_S3
-      ? this.env.NEON_PRIVATE_BUCKET
-      : this.env.R2_PRIVATE_BUCKET!;
-  }
-  private publicBucket() {
-    return this.env.AWS_ENDPOINT_URL_S3
-      ? this.env.NEON_PUBLIC_BUCKET
-      : this.env.R2_PUBLIC_BUCKET!;
-  }
   async presign(input: UploadInput) {
     const client = this.storage(),
       id = randomUUID(),
@@ -107,7 +84,7 @@ export class MediaService {
     const url = await getSignedUrl(
       client,
       new PutObjectCommand({
-        Bucket: this.privateBucket(),
+        Bucket: this.env.R2_PRIVATE_BUCKET!,
         Key: key,
         ContentType: input.contentType,
         ContentLength: input.sizeBytes,
@@ -128,6 +105,13 @@ export class MediaService {
   }
   async complete(id: string) {
     const client = this.storage();
+    const baseUrl = mediaPublicBaseUrl(this.env);
+    if (!baseUrl)
+      throw new HttpError(
+        503,
+        "storage_not_configured",
+        "Object storage is not configured.",
+      );
     const { rows } = await this.db.query<{
       object_key: string;
       content_type: string;
@@ -147,7 +131,7 @@ export class MediaService {
     try {
       const object = await client.send(
         new GetObjectCommand({
-          Bucket: this.privateBucket(),
+          Bucket: this.env.R2_PRIVATE_BUCKET!,
           Key: row.object_key,
         }),
         { abortSignal: AbortSignal.timeout(20000) },
@@ -181,7 +165,7 @@ export class MediaService {
       publicKey = `images/${id}.webp`;
       await client.send(
         new PutObjectCommand({
-          Bucket: this.publicBucket(),
+          Bucket: this.env.R2_PUBLIC_BUCKET!,
           Key: publicKey,
           Body: output.data,
           ContentType: "image/webp",
@@ -196,14 +180,14 @@ export class MediaService {
       await client
         .send(
           new DeleteObjectCommand({
-            Bucket: this.privateBucket(),
+            Bucket: this.env.R2_PRIVATE_BUCKET!,
             Key: row.object_key,
           }),
         )
         .catch(() => undefined);
       return {
         id,
-        url: `${mediaPublicBaseUrl(this.env)!}/${publicKey}`,
+        url: `${baseUrl}/${publicKey}`,
         width: output.info.width,
         height: output.info.height,
       };
@@ -212,7 +196,7 @@ export class MediaService {
         await client
           .send(
             new DeleteObjectCommand({
-              Bucket: this.publicBucket(),
+              Bucket: this.env.R2_PUBLIC_BUCKET!,
               Key: publicKey,
             }),
           )

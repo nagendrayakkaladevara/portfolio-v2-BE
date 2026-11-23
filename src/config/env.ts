@@ -28,12 +28,6 @@ const schema = z
     R2_PRIVATE_BUCKET: z.string().min(1).optional(),
     R2_PUBLIC_BUCKET: z.string().min(1).optional(),
     R2_PUBLIC_URL: https.optional(),
-    AWS_ACCESS_KEY_ID: z.string().min(1).optional(),
-    AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
-    AWS_ENDPOINT_URL_S3: https.optional(),
-    AWS_REGION: z.string().min(1).optional(),
-    NEON_PRIVATE_BUCKET: z.string().min(1).default("originals"),
-    NEON_PUBLIC_BUCKET: z.string().min(1).default("images"),
   })
   .superRefine((e, ctx) => {
     const groups = [
@@ -46,25 +40,11 @@ const schema = z
         e.R2_PUBLIC_BUCKET,
         e.R2_PUBLIC_URL,
       ],
-      [
-        e.AWS_ACCESS_KEY_ID,
-        e.AWS_SECRET_ACCESS_KEY,
-        e.AWS_ENDPOINT_URL_S3,
-        e.AWS_REGION,
-      ],
     ];
     if (groups.some((g) => g.some(Boolean) && !g.every(Boolean)))
       ctx.addIssue({
         code: "custom",
-        message:
-          "Configure all auth, all R2, or all Neon Object Storage variables together",
-      });
-    const r2 = Boolean(e.R2_ACCOUNT_ID);
-    const neonStorage = Boolean(e.AWS_ENDPOINT_URL_S3);
-    if (r2 && neonStorage)
-      ctx.addIssue({
-        code: "custom",
-        message: "Use either Cloudflare R2 or Neon Object Storage, not both",
+        message: "Configure all auth or all R2 variables together",
       });
     if (e.NODE_ENV === "production" && e.DATABASE_SSL !== "true")
       ctx.addIssue({
