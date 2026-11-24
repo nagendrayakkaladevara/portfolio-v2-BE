@@ -28,6 +28,7 @@ const schema = z
     R2_PRIVATE_BUCKET: z.string().min(1).optional(),
     R2_PUBLIC_BUCKET: z.string().min(1).optional(),
     R2_PUBLIC_URL: https.optional(),
+    GEMINI_API_KEY: z.string().min(1).optional(),
   })
   .superRefine((e, ctx) => {
     const groups = [

@@ -18,31 +18,39 @@ export const messageSchema = z.strictObject({
 });
 export const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
-export const chatConfig = {
-  enabled: false,
-  title: "Ask about Sai",
-  welcomeMessage:
-    "Explore Sai’s work, projects, and the ideas behind what he builds.",
-  suggestedQuestions: [
-    "What does Sai work on?",
-    "Show me his projects",
-    "What are his main skills?",
-    "How can I get in touch?",
-  ],
-  maxMessageLength: 2000,
-  disclaimer: "AI Agent · connection coming soon",
-};
+export function chatConfig(enabled: boolean) {
+  return {
+    enabled,
+    title: "Ask about Sai",
+    welcomeMessage:
+      "Explore Sai’s work, projects, and the ideas behind what he builds.",
+    suggestedQuestions: [
+      "What does Sai work on?",
+      "Show me his projects",
+      "What are his main skills?",
+      "How can I get in touch?",
+    ],
+    maxMessageLength: 2000,
+    disclaimer: enabled
+      ? "AI Agent · answers use this portfolio’s public profile."
+      : "AI Agent · connection coming soon",
+  };
+}
 export function chatRoutes(
   db: Database,
   sessionLimit: RequestHandler,
   messageLimit: RequestHandler,
+  geminiApiKey?: string,
 ) {
   const router = Router();
   router.use((_req, res, next) => {
     res.set("Cache-Control", "no-store");
     next();
   });
-  router.get("/config", (_req, res) => res.json({ data: chatConfig }));
+  const enabled = Boolean(geminiApiKey);
+  router.get("/config", (_req, res) =>
+    res.json({ data: chatConfig(enabled) }),
+  );
   // Capability sessions are implemented independently; generation remains fail-closed.
   router.post("/sessions", sessionLimit, async (req, res) => {
     z.strictObject({}).parse(req.body);
@@ -94,13 +102,104 @@ export function chatRoutes(
     "/sessions/:id/messages",
     messageLimit,
     authorize,
-    (req, _res) => {
-      messageSchema.parse(req.body);
-      throw new HttpError(
-        503,
-        "ai_not_configured",
-        "The AI Agent is not connected yet.",
-      );
+    async (req, res) => {
+      const body = messageSchema.parse(req.body);
+      if (!geminiApiKey)
+        throw new HttpError(
+          503,
+          "ai_not_configured",
+          "The AI Agent is not connected yet.",
+        );
+      const messageId = randomUUID();
+      const abort = new AbortController();
+      let timedOut = false;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        abort.abort();
+      }, 45_000);
+      res.on("close", () => {
+        if (!res.writableEnded) abort.abort();
+      });
+      const write = (type: string, payload: unknown) => {
+        if (!res.writableEnded)
+          res.write(`event: ${type}\ndata: ${JSON.stringify(payload)}\n\n`);
+      };
+      res.status(200);
+      res.set({
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "private, no-store, no-transform",
+        "X-Accel-Buffering": "no",
+      });
+      res.flushHeaders();
+      write("start", {
+        type: "start",
+        messageId,
+        clientMessageId: body.clientMessageId,
+      });
+      let text = "";
+      let finishReason: "stop" | "length" = "stop";
+      try {
+        const loaded = (await import("./" + "gemini.js")) as {
+          streamPortfolioAnswer: (
+            apiKey: string,
+            question: string,
+            signal: AbortSignal,
+          ) => AsyncGenerator<string>;
+        };
+        const { streamPortfolioAnswer } = loaded;
+        for await (const chunk of streamPortfolioAnswer(
+          geminiApiKey,
+          body.content,
+          abort.signal,
+        )) {
+          if (abort.signal.aborted || res.writableEnded) return;
+          const room = 8000 - text.length;
+          if (room <= 0) {
+            finishReason = "length";
+            break;
+          }
+          const piece = chunk.slice(0, Math.min(room, 2048));
+          text += piece;
+          write("delta", { type: "delta", text: piece });
+          if (piece.length < chunk.length) {
+            finishReason = "length";
+            break;
+          }
+        }
+        if (abort.signal.aborted || res.writableEnded) return;
+        if (!text.trim()) {
+          write("error", {
+            type: "error",
+            code: "content_unavailable",
+            retryable: true,
+          });
+        } else {
+          write("done", {
+            type: "done",
+            messageId,
+            text,
+            sources: [],
+            finishReason,
+            knowledgeVersion: "portfolio-public",
+          });
+        }
+        res.end();
+      } catch {
+        if (!res.writableEnded) {
+          write("error", {
+            type: "error",
+            code: timedOut
+              ? "generation_failed"
+              : abort.signal.aborted
+                ? "cancelled"
+                : "generation_failed",
+            retryable: !abort.signal.aborted || timedOut,
+          });
+          res.end();
+        }
+      } finally {
+        clearTimeout(timer);
+      }
     },
   );
   return router;

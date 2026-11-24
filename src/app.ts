@@ -116,6 +116,7 @@ export function createApp({
       db,
       limits("chat-session", 5, 3600000),
       limits("chat-message", 10),
+      env.GEMINI_API_KEY,
     ),
   );
   const admin = express.Router();
