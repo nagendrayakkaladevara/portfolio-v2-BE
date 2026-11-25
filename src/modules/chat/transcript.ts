@@ -76,7 +76,8 @@ export function upsertUserTurn(
   );
   if (index >= 0) {
     const next = [...transcript];
-    next[index] = { ...next[index], user: capped };
+    const existing = next[index]!;
+    next[index] = { ...existing, user: capped };
     return next;
   }
   return [...transcript, { clientMessageId, user: capped }];
@@ -94,6 +95,7 @@ export function saveAssistantTurn(
   );
   if (index < 0) return transcript;
   const next = [...transcript];
-  next[index] = { ...next[index], assistant: capped };
+  const existing = next[index]!;
+  next[index] = { ...existing, assistant: capped };
   return next;
 }
