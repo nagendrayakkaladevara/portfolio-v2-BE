@@ -55,7 +55,13 @@ beforeAll(async () => {
       "utf8",
     ),
   );
-}, 30000);
+  await pg.exec(
+    await readFile(
+      new URL("../migrations/003_chat_transcript.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+}, 120000);
 afterAll(async () => {
   await pg.close();
 });

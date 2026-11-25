@@ -3,6 +3,12 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { Database } from "../../db/client.js";
 import { HttpError } from "../../shared/errors.js";
+import {
+  completedPairs,
+  parseTranscript,
+  saveAssistantTurn,
+  upsertUserTurn,
+} from "./transcript.js";
 export const messageSchema = z.strictObject({
   clientMessageId: z.uuid(),
   content: z
@@ -111,6 +117,21 @@ export function chatRoutes(
           "The AI Agent is not connected yet.",
         );
       const messageId = randomUUID();
+      const sessionId = res.locals.sessionId as string;
+      const loaded = await db.query<{ transcript: unknown }>(
+        "SELECT transcript FROM chat_sessions WHERE id=$1",
+        [sessionId],
+      );
+      let transcript = upsertUserTurn(
+        parseTranscript(loaded.rows[0]?.transcript),
+        body.clientMessageId,
+        body.content,
+      );
+      await db.query("UPDATE chat_sessions SET transcript=$1 WHERE id=$2", [
+        JSON.stringify(transcript),
+        sessionId,
+      ]);
+      const history = completedPairs(transcript);
       const abort = new AbortController();
       let timedOut = false;
       const timer = setTimeout(() => {
@@ -139,17 +160,19 @@ export function chatRoutes(
       let text = "";
       let finishReason: "stop" | "length" = "stop";
       try {
-        const loaded = (await import("./" + "gemini.js")) as {
+        const gemini = (await import("./" + "gemini.js")) as {
           streamPortfolioAnswer: (
             apiKey: string,
             question: string,
+            history: ReturnType<typeof completedPairs>,
             signal: AbortSignal,
           ) => AsyncGenerator<string>;
         };
-        const { streamPortfolioAnswer } = loaded;
+        const { streamPortfolioAnswer } = gemini;
         for await (const chunk of streamPortfolioAnswer(
           geminiApiKey,
           body.content,
+          history,
           abort.signal,
         )) {
           if (abort.signal.aborted || res.writableEnded) return;
@@ -174,6 +197,15 @@ export function chatRoutes(
             retryable: true,
           });
         } else {
+          transcript = saveAssistantTurn(
+            transcript,
+            body.clientMessageId,
+            text,
+          );
+          await db.query(
+            "UPDATE chat_sessions SET transcript=$1 WHERE id=$2",
+            [JSON.stringify(transcript), sessionId],
+          );
           write("done", {
             type: "done",
             messageId,
