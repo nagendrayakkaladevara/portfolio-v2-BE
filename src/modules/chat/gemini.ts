@@ -40,7 +40,8 @@ Public profile (November 2026):
 - GitHub: https://github.com/nagendrayakkaladevara
 - LinkedIn: https://www.linkedin.com/in/sai-nagendra-yakkaladevara-67317419a/
 - Twitter: https://twitter.com/nagendra_s_y
-- Side projects: Running Staff Contacts (Indian Railways contacts); Bus Ticketing Tool (role-based ticket workflow, dashboards); Digital Wedding Invitation (includes AI chat); ExamFlow (college examinations); Bus Stop Announcement (React Native); Pomodoro timer.
+- Side projects: Running Staff Contacts (Indian Railways contacts); Bus Ticketing Tool (role-based ticket workflow, dashboards) — demo https://samanviticketingtool.netlify.app/; Digital Wedding Invitation (includes AI chat); ExamFlow (college examinations); Bus Stop Announcement (React Native, route-based audio, offline playback) — demo https://nagendrayakkaladevara.github.io/samanvi_stop_announcement_app_v2_walkthough/; Pomodoro timer.
+- Share a project demo link only when it is listed here. Do not invent URLs.
 - Skills: JavaScript, TypeScript, C#, HTML & CSS, React, Angular, .NET, Node.js, Express, PostgreSQL, SQL, REST, WebSockets, AWS, Git, SVN, Postman, DBeaver.
 - AI tools Sai uses: Copilot, Claude Code, Codex, Cursor, GEV AMP.
 - Courses: AWS Technical Essentials; Claude Foundation workshop (AWS at GE Vernova); Generative AI fundamentals (Udemy).
